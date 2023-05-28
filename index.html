@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PDF Viewer</title>
+    <script src="https://mozilla.github.io/pdf.js/build/pdf.js"></script>
+    <style>
+        #canvas-container {
+            overflow: auto;
+            max-height: 600px;
+        }
+        canvas {
+            max-width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <button id="rotate">Drehn 90° Rechts</button>
+    <div id="canvas-container"></div>
+
+    <script>
+        const url = './assets/sample.pdf'; // Ersetzen Sie diese URL durch den Link zu Ihrem PDF.
+
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://mozilla.github.io/pdf.js/build/pdf.worker.js';
+
+        let rotateAngle = 0;
+
+        const loadingTask = pdfjsLib.getDocument(url);
+        loadingTask.promise.then(pdf => {
+            console.log('PDF loaded');
+            
+            const container = document.getElementById('canvas-container');
+            for(let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                pdf.getPage(pageNum).then(page => {
+                    console.log('Page loaded');
+                    
+                    const scale = 1.5;
+                    const viewport = page.getViewport({scale: scale, rotation: rotateAngle});
+        
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+                    
+                    container.appendChild(canvas);
+        
+                    const renderContext = {
+                        canvasContext: context,
+                        viewport: viewport
+                    };
+                    const renderTask = page.render(renderContext);
+                    renderTask.promise.then(() => {
+                        console.log('Page rendered');
+                    });
+                });
+            }
+        }, reason => {
+            console.error(reason);
+        });
+
+        document.getElementById('rotate').addEventListener('click', () => {
+            rotateAngle = (rotateAngle + 90) % 360;
+
+            const container = document.getElementById('canvas-container');
+            container.innerHTML = '';
+
+            loadingTask.promise.then(pdf => {
+                for(let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                    pdf.getPage(pageNum).then(page => {
+                        const scale = 1.5;
+                        const viewport = page.getViewport({scale: scale, rotation: rotateAngle});
+            
+                        const canvas = document.createElement('canvas');
+                        const context = canvas.getContext('2d');
+                        canvas.height = viewport.height;
+                        canvas.width = viewport.width;
+                        
+                        container.appendChild(canvas);
+            
+                        const renderContext = {
+                            canvasContext: context,
+                            viewport: viewport
+                        };
+                        const renderTask = page.render(renderContext);
+                        renderTask.promise.then(() => {
+                            console.log('Page rendered');
+                        });
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
